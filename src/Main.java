@@ -19,7 +19,7 @@ public class Main {
     static int dirCounter = 0;
     static int errorCounter = 0;
 
-    public static void main() {
+    public static void main(String[] args) {
         // Creating instance of JFrame
         JFrame frame = new JFrame("My First Swing Example");
         // Setting the width and height of frame
@@ -58,7 +58,6 @@ public class Main {
         placeComponents(frame);
         frame.setVisible(true);
     }
-
 
     private static void placeComponents(JFrame panel) {
         String[] column ={"version","title","subtitle","artist","album","words","copyright","tabbed by","instructions"};
@@ -124,13 +123,12 @@ public class Main {
         }
     }
 
-
     private static List<String> readFileByName(String filename) throws Exception {
         fileCounter++;
         List<String> records = new ArrayList<String>();
         RandomAccessFile raf = null;
         try {
-            raf = new RandomAccessFile(filename, "rw");
+            raf = new RandomAccessFile(filename, "r");
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
@@ -146,14 +144,14 @@ public class Main {
         do {
             records.add(readString(raf));
         } while (records.size() < 9);
-
+        raf.close();
         return records;
     }
 
-    private static String readVersion(RandomAccessFile raf) throws IOException {
+    private static String readVersion(RandomAccessFile raf) throws Exception {
         int versionLength = raf.read();
         if ((versionLength == 0) || (versionLength > 30))
-            return "";
+            throw new Exception("Error 5: Wrong file version size: '" + versionLength + "'");
 
         byte[] charBuffer = new byte[30];
         raf.read(charBuffer, 0, (30));
@@ -165,12 +163,13 @@ public class Main {
         if ((!str.contains("FICHIER GUITAR PRO v3")) &&
             (!str.contains("FICHIER GUITAR PRO v4")) &&
             (!str.contains("FICHIER GUITAR PRO v5")))
-            return "";
+            throw new Exception("Error 4: Wrong file version: '" + str + "'");
 
         return str;
     }
 
     private static String readString(RandomAccessFile raf) throws Exception {
+        int ch1 = raf.read();
         int len = raf.readInt();
 
         if (len > 255)
@@ -185,3 +184,10 @@ public class Main {
         return str;
     }
 }
+/*
+*** FINISH ***
+        *** number of   dirs: 10380
+        *** number of  files: 98831
+        *** number of errors: 3567
+        *** processing time, sec: 237.982
+*/
