@@ -26,41 +26,37 @@ public class Main {
         frame.setSize(1000, 600);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        try {
-            long startTime = currentTimeMillis();
+        long startTime = currentTimeMillis();
 
-            allRecords = new ArrayList<List<String>>();
+        allRecords = new ArrayList<List<String>>();
 //            List<String> records = readFileByName("c:\\Users\\38095\\Music\\GP Tabs\\Aphorism - Aphorism.gp3");
 
-            // Creates an array in which we will store the names of files and directories
-            // String StartPath = "c:\\Users\\38095\\Music\\GP Tabs\\";
-            // String StartPath = "c:\\Tabs\\A\\";
-            String StartPath = "c:\\Tabs\\";
+        // Creates an array in which we will store the names of files and directories
+        // String StartPath = "c:\\Users\\38095\\Music\\GP Tabs\\";
+        // String StartPath = "c:\\Tabs\\A\\";
+        String StartPath = "c:\\Tabs\\";
 
-            // Creates a new File instance by converting the given pathname string
-            // into an abstract pathname
-            File f = new File(StartPath);
-            readDirectory(f);
-            data = new String[allRecords.size()] [9];
-            int i=0;
-            for (List<String> record: allRecords)
-            {
-                data[i] = record.toArray(new String[9]);
-                i++;
-            }
-            System.out.println("*** FINISH ***");
-            System.out.println("*** number of   dirs: " + dirCounter);
-            System.out.println("*** number of  files: " + fileCounter);
-            System.out.println("*** number of errors: " + errorCounter);
-
-            long endTime = currentTimeMillis();
-            System.out.println("*** processing time, sec: " + ((endTime - startTime)/1000.0));
-
-            placeComponents(frame);
-            frame.setVisible(true);
-        } catch (IOException e) {
-            e.printStackTrace();
+        // Creates a new File instance by converting the given pathname string
+        // into an abstract pathname
+        File f = new File(StartPath);
+        readDirectory(f);
+        data = new String[allRecords.size()] [9];
+        int i=0;
+        for (List<String> record: allRecords)
+        {
+            data[i] = record.toArray(new String[9]);
+            i++;
         }
+        System.out.println("*** FINISH ***");
+        System.out.println("*** number of   dirs: " + dirCounter);
+        System.out.println("*** number of  files: " + fileCounter);
+        System.out.println("*** number of errors: " + errorCounter);
+
+        long endTime = currentTimeMillis();
+        System.out.println("*** processing time, sec: " + ((endTime - startTime)/1000.0));
+
+        placeComponents(frame);
+        frame.setVisible(true);
     }
 
 
