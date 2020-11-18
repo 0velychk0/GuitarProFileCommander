@@ -4,19 +4,51 @@ import java.io.FileNotFoundException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static java.lang.System.currentTimeMillis;
 
 public class Main {
 
-    static boolean DEBUG_print_dir_names = false;
+    static boolean DEBUG_print_dir_info = false;
+    static boolean DEBUG_print_thread_info = true;
     static boolean DEBUG_print_file_names = false;
 
+    static boolean Feature_Use_Multi_thread = true;
+
+    static ReentrantLock mutexAllRecords = new ReentrantLock();
     static ArrayList<List<String>> allRecords = null;
     static String[][] data ={};
-    static int fileCounter = 0;
     static int dirCounter = 0;
+    private static Object mutexDirCounter = new Object();
+    private static void updateDirCounter(int incr) {
+        synchronized (mutexDirCounter) {
+            dirCounter = dirCounter + incr;
+        }
+    }
+
     static int errorCounter = 0;
+    private static Object mutexErrorCounter = new Object();
+    private static void updateErrorCounter(int incr) {
+        synchronized (mutexErrorCounter) {
+            errorCounter = errorCounter + incr;
+        }
+    }
+    static int threadCounter = 0;
+    private static Object mutexThreadCounter = new Object();
+    private static void updateThreadCounter(int incr) {
+        synchronized (mutexThreadCounter) {
+            threadCounter = threadCounter + incr;
+        }
+    }
+
+    static int fileCounter = 0;
+    private static Object mutexFileCounter = new Object();
+    private static void updateFileCounter(int incr) {
+        synchronized (mutexFileCounter) {
+            fileCounter = fileCounter + incr;
+        }
+    }
 
     public static void main(String[] args) {
         // Creating instance of JFrame
@@ -33,19 +65,27 @@ public class Main {
         // Creates an array in which we will store the names of files and directories
         // String StartPath = "c:\\Users\\38095\\Music\\GP Tabs\\";
         // String StartPath = "c:\\Tabs\\A\\";
-        String StartPath = "c:\\Tabs\\";
+         String StartPath = "c:\\Tabs\\";
 
         // Creates a new File instance by converting the given pathname string
         // into an abstract pathname
         File f = new File(StartPath);
-        readDirectory(f);
-        data = new String[allRecords.size()] [9];
-        int i=0;
-        for (List<String> record: allRecords)
-        {
-            data[i] = record.toArray(new String[9]);
-            i++;
+        ArrayList<List<String>> dirRecords = readDirectory(f);
+        if (dirRecords.size() > 0)
+            allRecords.addAll(dirRecords);
+
+        if (Feature_Use_Multi_thread) {
+            System.out.println("*** number of threads: " + threadCounter);
+            while (threadCounter > 0) {
+                try {
+                    Thread.sleep(50);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            System.out.println("*** number of threads: " + threadCounter);
         }
+
         System.out.println("*** FINISH ***");
         System.out.println("*** number of   dirs: " + dirCounter);
         System.out.println("*** number of  files: " + fileCounter);
@@ -53,6 +93,19 @@ public class Main {
 
         long endTime = currentTimeMillis();
         System.out.println("*** processing time, sec: " + ((endTime - startTime)/1000.0));
+
+        System.out.println("*** all records : " + allRecords.size());
+        System.out.println("*** all good files : " + (fileCounter - errorCounter));
+
+
+        // convert allRecords into grid format
+        data = new String[allRecords.size()] [9];
+        int i=0;
+        for (List<String> record: allRecords)
+        {
+            data[i] = record.toArray(new String[9]);
+            i++;
+        }
 
         placeComponents(frame);
         frame.setVisible(true);
@@ -92,38 +145,66 @@ public class Main {
         panel.add(loginButton); */
     }
 
-    private static void readDirectory(File filename) {
+    private static ArrayList<List<String>> readDirectory(File filename) {
         // Populates the array with names of files and directories
         File[] pathNames = filename.listFiles();
-        dirCounter++;
-        if (DEBUG_print_dir_names)
-            System.out.println("*** " + filename.getName());
+        updateDirCounter(1);
+        if (DEBUG_print_dir_info)
+            System.out.println("--- " + filename.getName());
 
-        if (pathNames == null) return;
+        if (pathNames == null) return null;
 
+        ArrayList<List<String>> newRecords = new ArrayList<List<String>>();
         // For each pathname in the pathNames array
         for (File pathname : pathNames) {
             if (pathname.isFile()) {
                 try {
                     List<String> records = readFileByName(pathname.getPath());
-                    allRecords.add(records);
+                    newRecords.add(records);
                     if (DEBUG_print_file_names)
                         System.out.println("reading "+ fileCounter + " : " + pathname.getName());
                 }
                 catch (Exception e) {
-                    errorCounter++;
+                    updateErrorCounter(1);
                     System.out.println("Error: " + e + " - at reading file: " + pathname.getName());
                 }
             }
             else if (pathname.isDirectory())
             {
-                readDirectory(pathname);
+                if (Feature_Use_Multi_thread) {
+                    Thread thread = new Thread() {
+                        public void run() {
+                            updateThreadCounter(1);
+                            if (DEBUG_print_thread_info)
+                                System.out.println("Thread " + threadCounter + " Running: " + pathname);
+                            ArrayList<List<String>> dirRecords = readDirectory(pathname);
+                            if (dirRecords.size() > 0)
+                            {
+                                mutexAllRecords.lock();
+                                allRecords.addAll(dirRecords);
+                                mutexAllRecords.unlock();
+                            }
+                            if (DEBUG_print_thread_info)
+                                System.out.println("Thread " + threadCounter + " STOP: " + pathname + "--- new size: " + allRecords.size());
+                            updateThreadCounter(-1);
+                        }
+                    };
+                    thread.start();
+                }
+                else
+                {
+                    ArrayList<List<String>> dirRecords = readDirectory(pathname);
+                    if (dirRecords.size() > 0)
+                        allRecords.addAll(dirRecords);
+                }
             }
         }
+
+        return newRecords;
     }
 
     private static List<String> readFileByName(String filename) throws Exception {
-        fileCounter++;
+        updateFileCounter(1);
         List<String> records = new ArrayList<String>();
         RandomAccessFile raf = null;
         try {
@@ -189,4 +270,6 @@ public class Main {
         *** number of  files: 98831
         *** number of errors: 3567
         *** processing time, sec: 237.982
+ *** all records : 95264
+ *** all good files : 95264
 */
