@@ -4,99 +4,87 @@ import java.io.FileNotFoundException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.locks.ReentrantLock;
 
 import static java.lang.System.currentTimeMillis;
 
 public class Main {
-// new change 1
+
     static boolean DEBUG_print_dir_info = false;
-    static boolean DEBUG_print_thread_info = true;
+    static boolean DEBUG_print_thread_info = false;
     static boolean DEBUG_print_file_names = false;
 
     static boolean Feature_Use_Multi_thread = true;
 
-    static ReentrantLock mutexAllRecords = new ReentrantLock();
+    static boolean waitForResults = false;
+    static long startTime;
+
+    static String[][] data = {};
+
     static ArrayList<List<String>> allRecords = null;
-    static String[][] data ={};
+    private static synchronized void updateAllRecords(ArrayList<List<String>> data) {
+        allRecords.addAll(data);
+    }
+
     static int dirCounter = 0;
-    private static Object mutexDirCounter = new Object();
-    private static void updateDirCounter(int incr) {
-        synchronized (mutexDirCounter) {
-            dirCounter = dirCounter + incr;
-        }
+    private static synchronized int updateDirCounter(int incr) {
+        dirCounter = dirCounter + incr;
+        return dirCounter;
     }
 
     static int errorCounter = 0;
-    private static Object mutexErrorCounter = new Object();
-    private static void updateErrorCounter(int incr) {
-        synchronized (mutexErrorCounter) {
-            errorCounter = errorCounter + incr;
-        }
+    private static synchronized int updateErrorCounter(int incr) {
+        errorCounter = errorCounter + incr;
+        return errorCounter;
     }
+
     static int threadCounter = 0;
-    private static Object mutexThreadCounter = new Object();
-    private static void updateThreadCounter(int incr) {
-        synchronized (mutexThreadCounter) {
-            threadCounter = threadCounter + incr;
-        }
+    private static synchronized int  updateThreadCounter(int incr) {
+        threadCounter = threadCounter + incr;
+        if (waitForResults && threadCounter == 0)
+            displayResults();
+        return threadCounter;
     }
 
     static int fileCounter = 0;
-    private static Object mutexFileCounter = new Object();
-    private static void updateFileCounter(int incr) {
-        synchronized (mutexFileCounter) {
-            fileCounter = fileCounter + incr;
-        }
+    private static synchronized int updateFileCounter(int incr) {
+        fileCounter = fileCounter + incr;
+        return fileCounter;
     }
 
     public static void main(String[] args) {
-        // Creating instance of JFrame
-        JFrame frame = new JFrame("My First Swing Example");
-        // Setting the width and height of frame
-        frame.setSize(1000, 600);
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-        long startTime = currentTimeMillis();
-
         allRecords = new ArrayList<List<String>>();
 //            List<String> records = readFileByName("c:\\Users\\38095\\Music\\GP Tabs\\Aphorism - Aphorism.gp3");
 
         // Creates an array in which we will store the names of files and directories
         // String StartPath = "c:\\Users\\38095\\Music\\GP Tabs\\";
-        // String StartPath = "c:\\Tabs\\A\\";
-         String StartPath = "c:\\Tabs\\";
+        String StartPath = "c:\\Tabs\\";
+        StartPath = "c:\\Tabs\\A\\";
+
+        startTime = currentTimeMillis();
 
         // Creates a new File instance by converting the given pathname string
         // into an abstract pathname
         File f = new File(StartPath);
         ArrayList<List<String>> dirRecords = readDirectory(f);
         if (dirRecords.size() > 0)
-            allRecords.addAll(dirRecords);
+            updateAllRecords(dirRecords);
 
-        if (Feature_Use_Multi_thread) {
-            System.out.println("*** number of threads: " + threadCounter);
-            while (threadCounter > 0) {
-                try {
-                    Thread.sleep(50);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-            System.out.println("*** number of threads: " + threadCounter);
-        }
+        waitForResults = true;
+    }
+
+    private static void displayResults()
+    {
+        long endTime = currentTimeMillis();
 
         System.out.println("*** FINISH ***");
         System.out.println("*** number of   dirs: " + dirCounter);
         System.out.println("*** number of  files: " + fileCounter);
         System.out.println("*** number of errors: " + errorCounter);
 
-        long endTime = currentTimeMillis();
         System.out.println("*** processing time, sec: " + ((endTime - startTime)/1000.0));
 
         System.out.println("*** all records : " + allRecords.size());
         System.out.println("*** all good files : " + (fileCounter - errorCounter));
-
 
         // convert allRecords into grid format
         data = new String[allRecords.size()] [9];
@@ -106,7 +94,11 @@ public class Main {
             data[i] = record.toArray(new String[9]);
             i++;
         }
-
+        // Creating instance of JFrame
+        JFrame frame = new JFrame("My First Swing Example");
+        // Setting the width and height of frame
+        frame.setSize(1000, 600);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         placeComponents(frame);
         frame.setVisible(true);
     }
@@ -180,9 +172,7 @@ public class Main {
                             ArrayList<List<String>> dirRecords = readDirectory(pathname);
                             if (dirRecords.size() > 0)
                             {
-                                mutexAllRecords.lock();
-                                allRecords.addAll(dirRecords);
-                                mutexAllRecords.unlock();
+                                updateAllRecords(dirRecords);
                             }
                             if (DEBUG_print_thread_info)
                                 System.out.println("Thread " + threadCounter + " STOP: " + pathname + "--- new size: " + allRecords.size());
