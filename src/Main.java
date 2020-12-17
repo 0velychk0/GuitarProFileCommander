@@ -1,4 +1,7 @@
 import javax.swing.*;
+import javax.swing.border.BevelBorder;
+import java.awt.BorderLayout;
+import java.awt.Dimension;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.RandomAccessFile;
@@ -69,22 +72,38 @@ public class Main {
         if (dirRecords.size() > 0)
             updateAllRecords(dirRecords);
 
-        waitForResults = true;
+        if (Feature_Use_Multi_thread)
+            waitForResults = true;
+        else
+            displayResults();
     }
 
     private static void displayResults()
     {
         long endTime = currentTimeMillis();
+        StringBuilder status = new StringBuilder("*** FINISH ***");
 
         System.out.println("*** FINISH ***");
         System.out.println("*** number of   dirs: " + dirCounter);
-        System.out.println("*** number of  files: " + fileCounter);
-        System.out.println("*** number of errors: " + errorCounter);
+        status.append("*** number of   dirs: ");
+        status.append(dirCounter);
 
-        System.out.println("*** processing time, sec: " + ((endTime - startTime)/1000.0));
+        System.out.println("*** number of  files: " + fileCounter);
+        status.append("*** number of files: ");
+        status.append(fileCounter);
+
+        System.out.println("*** number of errors: " + errorCounter);
+        status.append("*** number of errors: ");
+        status.append(errorCounter);
 
         System.out.println("*** all records : " + allRecords.size());
         System.out.println("*** all good files : " + (fileCounter - errorCounter));
+        status.append("*** number records: ");
+        status.append(allRecords.size());
+
+        System.out.println("*** processing time, sec: " + ((endTime - startTime)/1000.0));
+        status.append("*** processing time, sec: ");
+        status.append(((endTime - startTime)/1000.0));
 
         // convert allRecords into grid format
         data = new String[allRecords.size()] [9];
@@ -100,6 +119,18 @@ public class Main {
         frame.setSize(1000, 600);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         placeComponents(frame);
+
+
+        // create the status bar panel and shove it down the bottom of the frame
+        JPanel statusPanel = new JPanel();
+        statusPanel.setBorder(new BevelBorder(BevelBorder.LOWERED));
+        frame.add(statusPanel, BorderLayout.SOUTH);
+        statusPanel.setPreferredSize(new Dimension(frame.getWidth(), 16));
+        statusPanel.setLayout(new BoxLayout(statusPanel, BoxLayout.X_AXIS));
+        JLabel statusLabel = new JLabel(status.toString());
+        statusLabel.setHorizontalAlignment(SwingConstants.LEFT);
+        statusPanel.add(statusLabel);
+
         frame.setVisible(true);
     }
 
