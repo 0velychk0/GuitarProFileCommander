@@ -1,12 +1,16 @@
 import javax.swing.*;
 import javax.swing.border.BevelBorder;
+import javax.swing.table.AbstractTableModel;
+import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Vector;
 
 import static java.lang.System.currentTimeMillis;
 
@@ -118,54 +122,33 @@ public class Main {
         // Setting the width and height of frame
         frame.setSize(1000, 600);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        placeComponents(frame);
-
 
         // create the status bar panel and shove it down the bottom of the frame
         JPanel statusPanel = new JPanel();
         statusPanel.setBorder(new BevelBorder(BevelBorder.LOWERED));
         frame.add(statusPanel, BorderLayout.SOUTH);
-        statusPanel.setPreferredSize(new Dimension(frame.getWidth(), 16));
+        statusPanel.setPreferredSize(new Dimension(frame.getWidth(), 24));
         statusPanel.setLayout(new BoxLayout(statusPanel, BoxLayout.X_AXIS));
         JLabel statusLabel = new JLabel(status.toString());
         statusLabel.setHorizontalAlignment(SwingConstants.LEFT);
         statusPanel.add(statusLabel);
 
-        frame.setVisible(true);
-    }
-
-    private static void placeComponents(JFrame panel) {
+        // Add JTable with data
         String[] column ={"version","title","subtitle","artist","album","words","copyright","tabbed by","instructions"};
-        JTable jt = new JTable(data,column);
+        class MyTableModel extends DefaultTableModel {
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        }
+        MyTableModel model = new MyTableModel();
+        model.setDataVector(data, column);
+        JTable jt = new JTable(model);
         jt.setBounds(30,40,200,300);
+
         JScrollPane sp=new JScrollPane(jt);
-        panel.add(sp);
-/*
-        panel.setLayout(null);
+        frame.add(sp);
 
-        // Creating JLabel
-        JLabel userLabel = new JLabel("User");
-
-        userLabel.setBounds(10,20,80,25);
-        panel.add(userLabel);
-
-        JTextField userText = new JTextField(20);
-        userText.setBounds(100,20,165,25);
-        panel.add(userText);
-
-        // Same process for password label and text field.
-        JLabel passwordLabel = new JLabel("Password");
-        passwordLabel.setBounds(10,50,80,25);
-        panel.add(passwordLabel);
-
-        JPasswordField passwordText = new JPasswordField(20);
-        passwordText.setBounds(100,50,165,25);
-        panel.add(passwordText);
-
-        // Creating login button
-        JButton loginButton = new JButton("login");
-        loginButton.setBounds(10, 80, 80, 25);
-        panel.add(loginButton); */
+        frame.setVisible(true);
     }
 
     private static ArrayList<List<String>> readDirectory(File filename) {
